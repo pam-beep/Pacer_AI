@@ -4,3 +4,4 @@ pandas
 plotly
 dateparser
 matplotlib
+openai
