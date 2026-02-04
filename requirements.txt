@@ -1,0 +1,6 @@
+streamlit
+streamlit-calendar
+pandas
+plotly
+dateparser
+matplotlib
