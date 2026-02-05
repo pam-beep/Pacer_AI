@@ -231,7 +231,7 @@ def show_project_dialog(proj_id):
             atomic_save()
             st.rerun()
     
-    # Progress Bars
+    # Progress Visualization - Enhanced with Hourglass & Heartbeat
     pct_exec = calculate_completion(proj['tasks'])
     start_d = proj['start_date'].date() if isinstance(proj['start_date'], datetime) else proj['start_date']
     end_d = proj['end_date'].date() if isinstance(proj['end_date'], datetime) else proj['end_date']
@@ -241,10 +241,127 @@ def show_project_dialog(proj_id):
     if today_d < start_d: remaining_days = total_days
     elif today_d > end_d: remaining_days = 0
     pct_remaining = max(0.0, min(1.0, remaining_days / total_days if total_days > 0 else 0))
+    pct_elapsed = 1.0 - pct_remaining
     
-    st.caption(f"**Time Remaining**: {int(pct_remaining*100)}% ({remaining_days} days left)")
-    st.progress(pct_remaining)
-    st.caption(f"**Execution**: {int(pct_exec*100)}%")
+    # Calculate rhythm status (time vs execution)
+    is_behind = pct_elapsed > pct_exec  # Time passed > Work done
+    rhythm_gap = abs(pct_elapsed - pct_exec)
+    
+    # Delay Warning: 3 days or less remaining and not complete
+    is_urgent = remaining_days <= 3 and remaining_days > 0 and pct_exec < 1.0
+    is_overdue = remaining_days <= 0 and pct_exec < 1.0
+    
+    # Hourglass SVG Animation
+    sand_top = int(pct_remaining * 100)  # Sand remaining at top
+    sand_bottom = int(pct_elapsed * 100)  # Sand fallen to bottom
+    
+    # Color based on status
+    if is_overdue:
+        time_color = "#EF4444"  # Red - overdue
+        pulse_class = "pulse-fast"
+    elif is_urgent:
+        time_color = "#F59E0B"  # Orange - urgent
+        pulse_class = "pulse-medium"
+    elif is_behind:
+        time_color = "#FBBF24"  # Yellow - behind
+        pulse_class = "pulse-slow"
+    else:
+        time_color = "#10B981"  # Green - on track
+        pulse_class = ""
+    
+    exec_color = "#10B981" if pct_exec >= pct_elapsed else "#6B7280"
+    
+    # Heartbeat CSS Animation
+    st.markdown(f"""
+    <style>
+        @keyframes pulse-slow {{
+            0%, 100% {{ transform: scale(1); opacity: 1; }}
+            50% {{ transform: scale(1.02); opacity: 0.9; }}
+        }}
+        @keyframes pulse-medium {{
+            0%, 100% {{ transform: scale(1); opacity: 1; }}
+            50% {{ transform: scale(1.04); opacity: 0.85; }}
+        }}
+        @keyframes pulse-fast {{
+            0%, 100% {{ transform: scale(1); opacity: 1; }}
+            50% {{ transform: scale(1.06); opacity: 0.8; }}
+        }}
+        .pulse-slow {{ animation: pulse-slow 3s ease-in-out infinite; }}
+        .pulse-medium {{ animation: pulse-medium 1.5s ease-in-out infinite; }}
+        .pulse-fast {{ animation: pulse-fast 0.8s ease-in-out infinite; }}
+        
+        .hourglass-container {{
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #1a1c24 0%, #2d3748 100%);
+            border-radius: 12px;
+            margin: 10px 0;
+        }}
+        .hourglass {{
+            width: 60px;
+            height: 80px;
+            position: relative;
+        }}
+        .hourglass svg {{
+            width: 100%;
+            height: 100%;
+        }}
+        .time-info {{
+            flex: 1;
+        }}
+        .time-label {{
+            font-size: 0.85em;
+            color: #9CA3AF;
+            margin-bottom: 4px;
+        }}
+        .time-value {{
+            font-size: 1.5em;
+            font-weight: bold;
+            color: {time_color};
+        }}
+        .rhythm-badge {{
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-top: 8px;
+        }}
+        .rhythm-ahead {{ background: #10B981; color: white; }}
+        .rhythm-behind {{ background: {time_color}; color: white; }}
+    </style>
+    
+    <div class="hourglass-container {pulse_class}">
+        <div class="hourglass">
+            <svg viewBox="0 0 50 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Hourglass Frame -->
+                <path d="M5 5 L45 5 L45 10 L30 35 L45 60 L45 65 L5 65 L5 60 L20 35 L5 10 Z" 
+                      stroke="{time_color}" stroke-width="2" fill="none"/>
+                <!-- Top Sand -->
+                <path d="M10 10 L40 10 L28 {35 - sand_top * 0.2} L22 {35 - sand_top * 0.2} Z" 
+                      fill="{time_color}" opacity="0.7"/>
+                <!-- Bottom Sand -->
+                <path d="M10 60 L40 60 L28 {60 - sand_bottom * 0.2} L22 {60 - sand_bottom * 0.2} Z" 
+                      fill="{time_color}" opacity="0.9"/>
+                <!-- Falling Sand Stream -->
+                <line x1="25" y1="35" x2="25" y2="50" stroke="{time_color}" stroke-width="2" 
+                      stroke-dasharray="3,3" opacity="0.5"/>
+            </svg>
+        </div>
+        <div class="time-info">
+            <div class="time-label">⏳ Time Remaining</div>
+            <div class="time-value">{remaining_days} days ({int(pct_remaining*100)}%)</div>
+            <div class="rhythm-badge {'rhythm-ahead' if not is_behind else 'rhythm-behind'}">
+                {'✅ On Rhythm' if not is_behind else f'⚠️ Behind by {int(rhythm_gap*100)}%'}
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Execution Progress Bar (Green growing)
+    st.caption(f"**Execution Progress**: {int(pct_exec*100)}%")
     st.progress(pct_exec)
     
     st.divider()
@@ -398,15 +515,41 @@ with col_t:
 # 1. CALENDAR
 if view_mode == "Calendar":
     events = []
-    # ... (Keep existing Calendar Logic) ...
+    today = datetime.now().date()
+    
     for p in st.session_state.projects:
         status, color = get_project_status(p)
         vis_end = (p['end_date'] + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0) \
                   if isinstance(p['end_date'], datetime) else p['end_date'] + timedelta(days=1)
         
+        # Calculate urgency for delay warning
+        end_d = p['end_date'].date() if isinstance(p['end_date'], datetime) else p['end_date']
+        pct_exec = calculate_completion(p['tasks'])
+        remaining_days = (end_d - today).days + 1
+        
+        # Delay Warning Logic
+        is_overdue = remaining_days <= 0 and pct_exec < 1.0
+        is_urgent = remaining_days <= 3 and remaining_days > 0 and pct_exec < 1.0
+        
+        # Override color based on urgency
+        if is_overdue:
+            color = "#EF4444"  # Red - overdue
+            border_color = "#DC2626"
+        elif is_urgent:
+            color = "#F59E0B"  # Orange - urgent  
+            border_color = "#D97706"
+        else:
+            border_color = color
+        
         title = p['goal']
-        if status == "Completed": title = f"✔ {title}"
-        if status == "Not Started": title = f"⏳ {title}"
+        if status == "Completed": 
+            title = f"✔ {title}"
+        elif is_overdue:
+            title = f"🔴 {title}"
+        elif is_urgent:
+            title = f"⚠️ {title}"
+        elif status == "Not Started": 
+            title = f"⏳ {title}"
         
         s_str = p['start_date'].strftime('%Y-%m-%d')
         e_str = vis_end.strftime('%Y-%m-%d')
@@ -416,7 +559,7 @@ if view_mode == "Calendar":
             "start": s_str,
             "end": e_str,
             "backgroundColor": color,
-            "borderColor": color,
+            "borderColor": border_color,
             "extendedProps": {"projectId": p['id']},
             "allDay": True
         })
