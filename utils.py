@@ -52,6 +52,15 @@ def mock_generate_tasks(goal):
         {"task": f"Review outcome", "completed": False},
     ]
 
+def extract_tags(text):
+    """
+    Extract hashtags from text.
+    Returns: (list_of_tags, text_without_tags)
+    """
+    tags = re.findall(r'#(\w+)', text)
+    # clean_text = re.sub(r'#\w+', '', text).strip() # Option: Remove tags from title
+    return tags, text
+
 def generate_checklist(user_input):
     """
     Parses natural language input to extract project dates and tasks.

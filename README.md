@@ -6,6 +6,7 @@
 
 <p align="center">
   <b>智能目标节奏管理工具</b><br>
+  克莱因蓝 (Klein Blue) & 柠檬黄 (Lemon Yellow) 像素艺术风格<br>
   用自然语言设定目标，AI 智能拆解，日历可视化追踪
 </p>
 
