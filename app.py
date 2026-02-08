@@ -859,12 +859,8 @@ with st.sidebar:
     def open_recycle_bin():
         c_hdr1, c_hdr2 = st.columns([0.85, 0.15])
         with c_hdr1:
-            st.markdown(f'''
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <img src="data:image/png;base64,{b64_string}" width="40">
-                <span style="font-family: 'VT323', monospace; font-size: 24px; color: #002FA7;">RECYCLE BIN</span>
-            </div>
-            ''', unsafe_allow_html=True)
+            # Just show the icon to unify with sidebar, title is already in decorator
+            st.markdown(f'<img src="data:image/png;base64,{b64_string}" width="40">', unsafe_allow_html=True)
         with c_hdr2:
             if st.button("❌", key="close_bin_dialog", help="Close"):
                 st.rerun()
@@ -944,9 +940,11 @@ with st.sidebar:
         
     with c_bin_btn:
         st.markdown('<div style="height: 5px;"></div>', unsafe_allow_html=True)
-        if st.button("OPEN BIN", key="btn_open_recycle_bin", use_container_width=True):
+        # Nested columns for side-by-side buttons
+        btn_c1, btn_c2 = st.columns([0.5, 0.5])
+        if btn_c1.button("OPEN BIN", key="btn_open_recycle_bin", use_container_width=True):
             open_recycle_bin()
-        if st.button("CLEAN ALL", key="btn_sidebar_clean_bin", use_container_width=True, type="secondary"):
+        if btn_c2.button("CLEAN ALL", key="btn_sidebar_clean_bin", use_container_width=True, type="secondary"):
             st.session_state.deleted_projects = []
             st.rerun()
     
