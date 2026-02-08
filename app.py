@@ -849,6 +849,11 @@ with st.sidebar:
     # Custom Recycle Bin Icon
     res_bin_path = "/Users/pampan/.gemini/antigravity/brain/4499dd3b-5597-468b-8851-f1d47790ac74/pixel_art_trash_klein_yellow_1770467965524.png"
     
+    # Read Image as Base64 for HTML embedding
+    import base64
+    with open(res_bin_path, "rb") as img_file:
+        b64_string = base64.b64encode(img_file.read()).decode()
+
     # Define Dialog Function
     @st.dialog("🗑️ RECYCLE BIN")
     def open_recycle_bin():
