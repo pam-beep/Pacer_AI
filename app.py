@@ -1401,8 +1401,14 @@ if view_mode == "Calendar":
     events = []
     today = datetime.now().date()
     
+    # Tag icon mapping for calendar event titles
+    TAG_ICONS = {
+        "Work": "💼", "Personal": "🏠", "Urgent": "🚨", "Health": "💪",
+        "Social": "👥", "Learning": "📚", "Travel": "✈️", "Tavel": "✈️",
+    }
+
     for p in filtered_projects:
-        # --- Restored Color Logic ---
+        # --- Color Logic: Match PROJECT DASHBOARD categories ---
         status = p.get('status', 'Not Started')
         vis_end = (p['end_date'] + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0) \
                   if isinstance(p['end_date'], datetime) else p['end_date'] + timedelta(days=1)
@@ -1415,33 +1421,40 @@ if view_mode == "Calendar":
         
         is_overdue = remaining_days <= 0 and pct_exec < 1.0
         is_urgent = remaining_days <= 3 and remaining_days > 0 and pct_exec < 1.0
-        is_completed = (status == "Completed")
+        is_completed = pct_exec >= 1.0
         is_not_started = today < start_dw
         
-        # Pixel Art Palette (Primary Colors)
+        # Colors aligned with PROJECT DASHBOARD sidebar
+        # DONE (gray) / DELAYED (red) / PLANNED (blue) / ACTIVE (yellow)
         if is_completed:
-            bg_color = "#E0E0E0"    # Light Grey
-            border_color = "#757575"
-            text_color = "#424242"
-            title_prefix = "✔ "
+            bg_color = "#D1D5DB"    # Gray (matches DONE #4B5563)
+            border_color = "#4B5563"
+            text_color = "#374151"
+            status_prefix = "✔ "
         elif is_overdue:
-            bg_color = "#FFCDD2"    # Red
-            border_color = "#C62828"
-            text_color = "#B71C1C"
-            title_prefix = "🔴 "
+            bg_color = "#FCA5A5"    # Red (matches DELAYED #B91C1C)
+            border_color = "#B91C1C"
+            text_color = "#7F1D1D"
+            status_prefix = "🔴 "
         elif is_not_started:
-            bg_color = "#BBDEFB"    # Blue
-            border_color = "#1565C0"
-            text_color = "#0D47A1"
-            title_prefix = "⏳ "
+            bg_color = "#93C5FD"    # Blue (matches PLANNED #1D4ED8)
+            border_color = "#1D4ED8"
+            text_color = "#1E3A8A"
+            status_prefix = ""
         else:
-            # Active / In Progress
-            bg_color = "#FFF9C4"    # Yellow
-            border_color = "#FBC02D"
-            text_color = "#E65100"
-            title_prefix = "⚠️ " if is_urgent else ""
+            # Active / In Progress (matches ACTIVE #B45309)
+            bg_color = "#FDE68A"    # Yellow/Amber
+            border_color = "#B45309"
+            text_color = "#78350F"
+            status_prefix = "⚠️ " if is_urgent else ""
 
-        title = f"{title_prefix}{p['goal']} ({int(pct_exec*100)}%)"
+        # Build tag icon prefix from first tag
+        tag_icon = ""
+        p_tags = p.get('tags', [])
+        if p_tags:
+            tag_icon = TAG_ICONS.get(p_tags[0], "🏷️") + " "
+
+        title = f"{status_prefix}{tag_icon}{p['goal']} ({int(pct_exec*100)}%)"
 
         evt = {
             "title": title,
@@ -1489,8 +1502,9 @@ if view_mode == "Calendar":
         background-size: 10px 10px;
     }
     .fc-daygrid-event {
-        border: 2px solid #000000 !important;
-        box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.5) !important;
+        border-width: 2px !important;
+        border-style: solid !important;
+        box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.3) !important;
         border-radius: 0px !important;
         padding: 2px 4px !important;
         font-family: 'VT323', monospace !important;

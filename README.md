@@ -28,6 +28,7 @@
 - **📊 Review Dashboard** — KPI 面板、状态分布图、节奏分数、时间债务分析
 - **⏱️ 专注计时器** — 内置番茄钟，记录专注时间
 - **🗑️ 回收站系统** — 误删项目可恢复，像素风回收站UI
+- **⏳ 沙漏 vs 烧杯** — 核心亮点！直观对比"时间流逝"(沙漏)与"执行进度"(烧杯)，警示时间债务
 - **🏆 任务激励** — 完成100%时触发"MISSION ACCOMPLISHED"庆祝动画
 - **🎨 Win98像素美学** — 克莱因蓝+柠檬黄配色，VT323像素字体，像素风按钮和图标
 
@@ -42,17 +43,17 @@
 
 ## 📸 应用截图
 
-| 日历视图 | Review Dashboard |
+| 日历视图 | 侧边栏仪表盘 |
 |:---:|:---:|
-| ![日历视图](screenshots/1_calendar.png) | ![Review KPI](screenshots/2_review_kpi.png) |
+| ![Calendar](screenshots/1_calendar.png) | ![Sidebar](screenshots/2_sidebar.png) |
 
-| 数据下钻 | 数据导出 |
+| ⏳ 核心亮点：沙漏 vs 烧杯 | Review KPI 面板 |
 |:---:|:---:|
-| ![Drilldown](screenshots/3_drilldown.png) | ![Export](screenshots/4_export.png) |
+| ![Project Detail](screenshots/3_hourglass_beaker.png) | ![Review KPI](screenshots/4_review_kpi.png) |
 
-| 项目详情 |
+| 项目列表视图 |
 |:---:|
-| ![Project Detail](screenshots/5_project_detail.png) |
+| ![Review List](screenshots/5_review_list.png) |
 
 ---
 
