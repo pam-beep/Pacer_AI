@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://pacer-ai.streamlit.app">🔗 在线演示</a> ·
+  <a href="https://pacerai.streamlit.app">🔗 在线演示</a> ·
   <a href="https://github.com/pam-beep/Pacer_AI">📦 GitHub</a>
 </p>
 
@@ -84,7 +84,7 @@ streamlit run app.py
 
 ### 在线演示
 
-🔗 **Demo**: [https://pacer-ai.streamlit.app](https://pacer-ai.streamlit.app)
+🔗 **Demo**: [https://pacerai.streamlit.app](https://pacerai.streamlit.app)
 
 > **注意**：在线版本无需配置 API Key，使用内置智能模板即可体验全部功能。
 
