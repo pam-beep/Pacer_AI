@@ -5,3 +5,4 @@ plotly
 dateparser
 matplotlib
 openai
+python-dateutil

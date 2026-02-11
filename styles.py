@@ -66,9 +66,6 @@ GLOBAL_STYLES = """<style>
         box-shadow: 4px 4px 0px #F9DC24 !important;
     }
     
-        div[data-testid="stDialog"] div {
-            color: #002FA7 !important;
-        }
     }
     
     /* Inner Input Text Formatting */
@@ -320,17 +317,11 @@ GLOBAL_STYLES = """<style>
         }
         
         /* Lighten Project Details Dialog (Aggressive targeting) */
-        div[data-testid="stDialog"] > div:first-child > div:first-child,
-        div[data-testid="stDialog"] section,
-        div[data-testid="stDialog"] div[role="dialog"],
         div[data-testid="stDialog"] div[data-testid="stVerticalBlock"] {
             background-color: #F8FAFC !important; /* Extremely Light Gray */
             color: #1E293B !important;
-        }
-        
-        /* Status Badge Dark Mode Support */
-        .pixel-status-badge {
-            background-color: #F8FAFC !important;
+            border: none !important;
+            outline: none !important;
         }
         
         /* Ensure labels in dialog are dark blue/gray for contrast */
@@ -338,6 +329,63 @@ GLOBAL_STYLES = """<style>
         div[data-testid="stDialog"] p,
         div[data-testid="stDialog"] div[data-testid="stMarkdownContainer"] p {
             color: #002FA7 !important;
+        }
+
+        /* Reform buttons inside dialog (Close button, Restore, etc) to match theme, NO BLACK */
+        div[data-testid="stDialog"] button {
+            border: 2px solid #002FA7 !important;
+            color: #002FA7 !important;
+            box-shadow: 2px 2px 0px #002FA7 !important;
+            font-family: 'VT323', monospace !important;
+            font-size: 16px !important;
+            text-transform: uppercase !important;
+            border-radius: 0px !important;
+            transition: all 0.1s ease !important;
+        }
+        div[data-testid="stDialog"] button:hover {
+            background-color: #002FA7 !important;
+            color: #F9DC24 !important;
+            border-color: #002FA7 !important;
+            transform: translate(1px, 1px) !important;
+            box-shadow: 1px 1px 0px #002FA7 !important;
+        }
+
+        /* Primary Buttons - Yellow accent - HIGH PRIORITY OVERRIDE */
+        div[data-testid="stDialog"] button[kind="primary"],
+        div[data-testid="stDialog"] button[data-testid="stBaseButton-primary"] {
+            background-color: #F9DC24 !important;
+            color: #002FA7 !important;
+            border: 2px solid #002FA7 !important;
+            box-shadow: 3px 3px 0px #000000 !important;
+            font-weight: bold !important;
+            min-height: 36px !important;
+            height: auto !important;
+            padding: 6px 16px !important;
+            font-size: 16px !important;
+        }
+        div[data-testid="stDialog"] button[kind="primary"]:hover,
+        div[data-testid="stDialog"] button[data-testid="stBaseButton-primary"]:hover {
+            background-color: #002FA7 !important;
+            color: #F9DC24 !important;
+            box-shadow: 1px 1px 0px #000000 !important;
+        }
+        
+        /* Prevent content overflow in dialog */
+        div[data-testid="stDialog"] > div {
+            overflow-x: hidden !important;
+            max-width: 100% !important;
+        }
+        div[data-testid="stDialog"] div[data-testid="stVerticalBlock"] {
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+        }
+        
+        /* Recycle bin icon container in dialog - constrain size */
+        div[data-testid="stDialog"] img {
+            max-width: 50px !important;
+            image-rendering: pixelated !important;
+            background-color: transparent !important;
+            border: none !important;
         }
 
         /* Multiselect Tags and Selectbox in Dialogs - FORCE LIGHT GRAY */
@@ -371,21 +419,13 @@ GLOBAL_STYLES = """<style>
             color: #002FA7 !important;
         }
 
-        /* Trash Icon Containers - Remove any gray background */
-        div[data-testid="stDialog"] img,
-        div[data-testid="stSidebar"] img {
-            background-color: transparent !important;
-            border: none !important;
-        }
-        
         /* "Add" Buttons in Dialogs - FORCE LIGHT */
-        div[data-testid="stDialog"] button[kind="secondary"],
-        div[data-testid="stDialog"] button[kind="primary"] {
+        div[data-testid="stDialog"] button[kind="secondary"] {
             background-color: #E2E8F0 !important;
             color: #002FA7 !important;
             border: 2px solid #002FA7 !important;
         }
-        div[data-testid="stDialog"] button:hover {
+        div[data-testid="stDialog"] button[kind="secondary"]:hover {
             background-color: #F9DC24 !important; /* Yellow hover */
             color: #000 !important;
         }

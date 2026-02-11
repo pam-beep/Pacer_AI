@@ -1,9 +1,10 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 from datetime import datetime, timedelta
 import plotly.express as px
 import plotly.graph_objects as go
-from persistence import save_data, load_journal, save_journal
+from persistence import save_data, load_journal, save_journal, load_focus_data
 from ai_suggestions import analyze_patterns, generate_suggestions
 import uuid
 import textwrap
@@ -37,118 +38,26 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- Helper: Rich Detail Dialog (Editable) ---
-@st.dialog("Project Details")
-def view_project_dialog(p_id):
-    p_id_str = str(p_id)
-    if 'projects' not in st.session_state:
-        st.error("Session data missing.")
-        return
-    proj = next((x for x in st.session_state.projects if str(x.get('id')) == p_id_str), None)
-    if not proj:
-        st.error(f"Project not found. ID: {p_id}")
-        if st.button("Close"): st.rerun()
-        return
-
-    # --- Resources ---
-    res_bin_path = "/Users/pampan/.gemini/antigravity/brain/4499dd3b-5597-468b-8851-f1d47790ac74/pixel_art_recycle_bin_transparent_1770466742660.png"
-    import base64
-    def get_img_b64(path):
-        try:
-            with open(path, "rb") as f: return base64.b64encode(f.read()).decode()
-        except: return ""
-
-    # --- HEADER ---
-    c1, c2 = st.columns([0.85, 0.15])
-    with c1:
-        new_goal = st.text_input("Goal", value=proj['goal'], key=f"d_goal_{p_id}")
-        if new_goal != proj['goal']:
-            proj['goal'] = new_goal
-            save_data(st.session_state.projects)
-            st.rerun()
-    with c2:
-        # Simple status badge
-        comp = sum(1 for t in proj['tasks'] if t['completed']) / len(proj['tasks']) if proj.get('tasks') else 0
-        stat_txt = "DONE" if comp >= 1.0 else "ACTIVE"
-        stat_col = "#10B981" if comp >= 1.0 else "#3B82F6"
-        st.markdown(f'<div style="height: 28px;"></div>', unsafe_allow_html=True)
-        st.markdown(f"<div class='pixel-status-badge' style='color:{stat_col}; border-color:{stat_col};'>{stat_txt}</div>", unsafe_allow_html=True)
-
-    # --- DATES ---
-    c3, c4 = st.columns(2)
-    with c3:
-        s_val = proj['start_date'].date() if isinstance(proj['start_date'], datetime) else proj['start_date']
-        new_s = st.date_input("Start Date", value=s_val, key=f"d_start_{p_id}")
-    with c4:
-        e_val = proj['end_date'].date() if isinstance(proj['end_date'], datetime) else proj['end_date']
-        new_e = st.date_input("Deadline", value=e_val, key=f"d_end_{p_id}")
-    
-    if new_s != s_val or new_e != e_val:
-        proj['start_date'] = datetime.combine(new_s, datetime.min.time())
-        proj['end_date'] = datetime.combine(new_e, datetime.min.time())
-        save_data(st.session_state.projects)
-        st.rerun()
-
-    # --- REWARD ---
-    curr_reward = proj.get('reward', '')
-    new_reward = st.text_input("🎁 Reward", value=curr_reward, key=f"d_reward_{p_id}", placeholder="Reward for yourself...")
-    if new_reward != curr_reward:
-        proj['reward'] = new_reward
-        save_data(st.session_state.projects)
-
-    st.divider()
-    
-    # --- CHECKPOINTS ---
-    st.markdown("<div style='font-family: VT323; font-size: 20px; color: #002FA7; margin-bottom: 10px;'>CHECKPOINTS</div>", unsafe_allow_html=True)
-    
-    if 'tasks' not in proj: proj['tasks'] = []
-    
-    for i, t in enumerate(proj['tasks']):
-        c_k, c_n, c_d = st.columns([0.05, 0.85, 0.1])
-        with c_k:
-            is_done = st.checkbox("", value=t.get('completed', False), key=f"chk_{p_id}_{i}")
-            if is_done != t.get('completed', False):
-                t['completed'] = is_done
-                save_data(st.session_state.projects)
-                st.rerun()
-        with c_n:
-            task_name = t.get('task', t.get('name', 'Unnamed'))
-            style = "color: #6E7280; text-decoration: line-through;" if t.get('completed', False) else "color: #002FA7;"
-            st.markdown(f"<span style='{style} font-family: VT323; font-size: 18px;'>{task_name}</span>", unsafe_allow_html=True)
-        with c_d:
-            if st.button("x", key=f"rm_t_{p_id}_{i}"):
-                proj['tasks'].pop(i)
-                save_data(st.session_state.projects)
-                st.rerun()
-                
-    new_task = st.text_input("New Checkpoint", placeholder="New task...", key=f"new_t_{p_id}", label_visibility="collapsed")
-    if st.button("ADD", key=f"add_t_{p_id}", use_container_width=True) and new_task:
-        proj['tasks'].append({"task": new_task, "completed": False})
-        save_data(st.session_state.projects)
-        st.rerun()
-
-    st.markdown("---")
-
-    # --- DELETE SECTION (Recycle Bin Icon) ---
-    c_del_ico, c_del_btn = st.columns([0.2, 0.8])
-    with c_del_ico:
-        b64_img = get_img_b64(res_bin_path)
-        if b64_img:
-             st.markdown(f'<div style="text-align: center;"><img src="data:image/png;base64,{b64_img}" width="50"></div>', unsafe_allow_html=True)
-        else:
-             st.markdown("🗑️")
-
-    with c_del_btn:
-        st.markdown('<div style="height: 8px;"></div>', unsafe_allow_html=True)
-        if st.button("THROW IN BIN", key=f"del_{p_id}", type="primary", use_container_width=True):
-            st.session_state.projects = [x for x in st.session_state.projects if str(x.get('id')) != p_id_str]
-            save_data(st.session_state.projects)
-            st.rerun()
+# --- REMOVED REDUNDANT DIALOG (Moved to app.py for unification) ---
 
 # --- Helper: List Popup (Charts) ---
-@st.dialog("Project List")
+@st.dialog("PROJECT LIST")
 def view_project_list_dialog(title, p_infos):
-    st.caption(f"Showing: {title}")
+    st.markdown("""
+    <style>
+    div[data-testid="stDialog"] div[data-testid="stDialogHeader"] { display: none !important; }
+    button[aria-label="Close"] { display: none !important; }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Header Row
+    c_h1, c_h2 = st.columns([0.88, 0.12])
+    with c_h1:
+        st.markdown(f"<div style='font-family: VT323; font-size: 24px; color: #002FA7; font-weight: bold; text-transform: uppercase;'>PROJECT LIST: {title}</div>", unsafe_allow_html=True)
+    with c_h2:
+        if st.button("❌", key="close_list_dialog"):
+            st.rerun()
+            
     if not p_infos:
         st.info("No projects.")
         return
@@ -160,11 +69,18 @@ def view_project_list_dialog(title, p_infos):
             st.caption(f"{p['Start']} → {p['Deadline']} | {p['Status']}")
         with col2:
             if st.button("View", key=f"list_view_{p['_id']}_{i}"):
-                st.session_state.pending_detail_id = p['_id']
+                st.session_state.selected_project_id = p['_id']
                 st.rerun()
 
 
 def render_review_dashboard(projects):
+    # Redirect pending details to the master selected_project_id
+    if st.session_state.get('pending_detail_id'):
+        st.session_state.selected_project_id = st.session_state.pending_detail_id
+        st.session_state.pending_detail_id = None
+        st.rerun()
+
+    today = datetime.now().date()
     # FIX: Light Mode Compatible Buttons & CARD STYLE
     st.markdown("""
     <style>
@@ -284,7 +200,7 @@ def render_review_dashboard(projects):
             gap: 1rem;
         }
 
-        /* Module Headers -> MATCH TIME BANK STYLE */
+        /* Module Headers (Big Headers) -> RESTORED PIXEL ART STYLE */
         .review-card-header {
             background: #002FA7 !important;
             color: #F9DC24 !important;
@@ -297,10 +213,56 @@ def render_review_dashboard(projects):
             text-transform: uppercase;
             margin-bottom: 12px;
             box-shadow: 0px 4px 0px rgba(0,0,0,0.1);
-            transform: rotate(-1deg); /* Slight stamp effect */
+            transform: rotate(-1deg);
             display: block;
             width: 100%;
             letter-spacing: 1px;
+        }
+
+        /* Secondary Headers (Tabs: List View, Time Machine, Weekly, Monthly, Yearly) -> MATCH RHYTHM STYLE */
+        button[data-baseweb="tab"] {
+            background-color: transparent !important;
+        }
+        button[data-baseweb="tab"] div p,
+        button[data-baseweb="tab"] span,
+        button[data-baseweb="tab"] div {
+            font-weight: 700 !important;
+            color: #1E3A8A !important;
+            font-size: 1.1em !important;
+            font-family: inherit !important;
+        }
+        /* Active Tab Highlight */
+        button[data-baseweb="tab"][aria-selected="true"] {
+             border-bottom-color: #002FA7 !important;
+        }
+        button[data-baseweb="tab"][aria-selected="true"] div p {
+             color: #002FA7 !important;
+        }
+
+        /* METRIC LABELS (Early, On Time, etc.) */
+        div[data-testid="stMetricLabel"] p {
+            font-weight: 700 !important;
+            color: #1E3A8A !important;
+            font-size: 1.1em !important;
+        }
+
+        /* WIDGET LABELS (Time Period, Making Progress) */
+        div[data-testid="stWidgetLabel"] p,
+        div[data-testid="stWidgetLabel"] label {
+            font-weight: 700 !important;
+            color: #1E3A8A !important;
+            font-size: 1.1em !important;
+        }
+
+        /* CUSTOM SUB-HEADER CLASS -> MATCH RHYTHM STYLE */
+        .rhythm-sub-header {
+            font-weight: 700 !important;
+            color: #1E3A8A !important;
+            font-size: 1.1em !important;
+            margin-bottom: 8px;
+            display: block;
+            text-transform: none;
+            font-family: inherit;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -330,10 +292,11 @@ def render_review_dashboard(projects):
     today = datetime.now().date()
     
     # --- Handle Pending Detail ---
+    # Unified dispatcher in app.py handles selected_project_id
     if 'pending_detail_id' in st.session_state and st.session_state.pending_detail_id:
-        detail_id = st.session_state.pending_detail_id
+        st.session_state.selected_project_id = st.session_state.pending_detail_id
         st.session_state.pending_detail_id = None
-        view_project_dialog(detail_id)
+        st.rerun()
 
     # --- MODULE 1: YEARLY DENSITY ---
     with st.container(border=True):
@@ -351,14 +314,12 @@ def render_review_dashboard(projects):
         month_counts = {m: 0 for m in range(1, 13)}
         for p in year_projects:
             s = p['start_date'].date() if isinstance(p['start_date'], datetime) else p['start_date']
-            e = p['end_date'].date() if isinstance(p['end_date'], datetime) else p['end_date']
-            for m in range(1, 13):
-                if m == 12: ms, me = datetime(today.year, m, 1).date(), datetime(today.year, m, 31).date()
-                else: ms, me = datetime(today.year, m, 1).date(), (datetime(today.year, m+1, 1) - timedelta(days=1)).date()
-                if s <= me and e >= ms: month_counts[m] += 1
+            # Only count in the Start Month to avoid duplicate counting across months
+            if s.year == today.year:
+                month_counts[s.month] += 1
 
         # Mini Buttons for Months (Pixel Art Label)
-        st.markdown('<div class="passbook-label" style="font-size: 16px; margin-bottom: 10px; color:#002FA7;">SELECT MONTH TO VIEW DETAILS (MONTH):</div>', unsafe_allow_html=True)
+        st.markdown('<div class="rhythm-sub-header">Select Month to View Details (Month):</div>', unsafe_allow_html=True)
         
         month_cols = st.columns(12)
         clicked_month = None
@@ -428,6 +389,56 @@ def render_review_dashboard(projects):
             view_project_list_dialog(f"{datetime(today.year, m, 1).strftime('%B')}", p_infos)
 
 
+        # --- POMODORO FOCUS STATISTICS ---
+        st.markdown("---")
+        st.markdown('<div class="rhythm-sub-header">Pomodoro Focus Time Statistics (Minutes):</div>', unsafe_allow_html=True)
+        
+        # FOCUS STATS: Pull from session state first
+        focus_data = st.session_state.get('focus_sessions', load_focus_data())
+        focus_month_counts = {m: 0 for m in range(1, 13)}
+        
+        for sess in focus_data:
+            s_date = sess.get('date')
+            if s_date:
+                if isinstance(s_date, str):
+                    try:
+                        s_date = datetime.fromisoformat(s_date)
+                    except: continue
+                if s_date.year == today.year:
+                    m = s_date.month
+                    focus_month_counts[m] += sess.get('duration', 0)
+        
+        # Focus Bar Chart
+        df_focus = pd.DataFrame([{"Month": datetime(today.year, m, 1).strftime("%b"), "Minutes": c} for m, c in focus_month_counts.items()])
+        fig_focus = px.bar(df_focus, x="Month", y="Minutes", text="Minutes", title=None)
+        fig_focus.update_layout(
+            margin=dict(t=20, l=10, r=10, b=0),
+            xaxis=dict(
+                showgrid=False, 
+                showline=True, 
+                linecolor='#002FA7', 
+                linewidth=2,
+                tickfont=dict(family='VT323, monospace', size=16, color='#002FA7')
+            ), 
+            xaxis_title=None,
+            yaxis=dict(showgrid=False, showline=False, visible=False), 
+            plot_bgcolor='rgba(0,0,0,0)', 
+            paper_bgcolor='rgba(0,0,0,0)', 
+            font=dict(family='VT323, monospace', size=16, color='#002FA7'), 
+            height=180
+        )
+        fig_focus.update_traces(
+            textposition='inside',
+            insidetextanchor='end',
+            textfont=dict(family='VT323, monospace', size=18, color='#002FA7'),
+            marker_color='#F9DC24',  # Yellow for Focus
+            marker_line_width=2, 
+            marker_line_color='#002FA7',
+            opacity=1.0
+        )
+        st.plotly_chart(fig_focus, use_container_width=True, key="chart_focus_year")
+
+
     # --- MODULE 2: KEY PERFORMANCE INDICATORS ---
     with st.container(border=True):
         st.markdown('<div class="review-card-header">📊 KPIs & Rhythm</div>', unsafe_allow_html=True)
@@ -436,7 +447,8 @@ def render_review_dashboard(projects):
         # Adjusted ratio to force radio buttons on one line
         f_col1, f_col2 = st.columns([0.75, 0.25]) 
         with f_col1:
-            period = st.radio("Time Period", ["Last 7 Days", "This Month", "This Year", "Custom Range"], horizontal=True, label_visibility="visible")
+            st.markdown('<div class="rhythm-sub-header">Time Period</div>', unsafe_allow_html=True)
+            period = st.radio("Time Period", ["Last 7 Days", "This Month", "This Year", "Custom Range"], horizontal=True, label_visibility="collapsed")
         with f_col2:
             custom_dates = []
             if period == "Custom Range":
@@ -478,14 +490,34 @@ def render_review_dashboard(projects):
         prev_projects = []
 
         for p in projects:
-            s_date = p['start_date'].date() if isinstance(p['start_date'], datetime) else p['start_date']
-            if s_date >= start_filter and s_date <= end_filter:
+            s_val = p.get('start_date')
+            if isinstance(s_val, str):
+                try: s_date = datetime.fromisoformat(s_val).date()
+                except: s_date = datetime.max.date()
+            elif isinstance(s_val, datetime):
+                s_date = s_val.date()
+            else:
+                s_date = s_val
+
+            e_val = p.get('end_date')
+            if isinstance(e_val, str):
+                try: e_date = datetime.fromisoformat(e_val).date()
+                except: e_date = datetime.max.date()
+            elif isinstance(e_val, datetime):
+                e_date = e_val.date()
+            else:
+                e_date = e_val
+            
+            # Use Overlap Logic: Project Start <= Filter End AND Project End >= Filter Start
+            if s_date <= end_filter and e_date >= start_filter:
                 current_projects.append(p)
+                
             if prev_start_filter and prev_end_filter:
+                # Comparison logic for previous period (also overlap)
                 if prev_inclusive:
-                    if s_date >= prev_start_filter and s_date <= prev_end_filter: prev_projects.append(p)
+                    if s_date <= prev_end_filter and e_date >= prev_start_filter: prev_projects.append(p)
                 else:
-                    if s_date >= prev_start_filter and s_date < prev_end_filter: prev_projects.append(p)
+                    if s_date < prev_end_filter and e_date >= prev_start_filter: prev_projects.append(p)
 
         filtered = current_projects
 
@@ -564,18 +596,18 @@ def render_review_dashboard(projects):
         # Unified Card Style for Rhythm & AI
         
         analysis_icon = "✅"
-        analysis_title = "RHYTHM: BALANCED"
+        analysis_title = "Rhythm: Balanced"
         analysis_desc = "Your completion rate is steady."
         analysis_tip = "Keep this pace."
         
         if curr_lr > 0.3:
             analysis_icon = "⚠️"
-            analysis_title = "RHYTHM: LAG DETECTED"
+            analysis_title = "Rhythm: Lag Detected"
             analysis_desc = f"Delay Rate is High ({int(curr_lr*100)}%)."
             analysis_tip = "Focus on clearing backlog."
         elif curr_early > 0.3:
             analysis_icon = "🌊" 
-            analysis_title = "RHYTHM: ACCELERATED"
+            analysis_title = "Rhythm: Accelerated"
             analysis_desc = f"Early Completion Rate is High ({int(curr_early*100)}%)."
             analysis_tip = "Consider increasing load."
 
@@ -670,68 +702,97 @@ def render_review_dashboard(projects):
                         # Reverting to simple top alignment for button (user preferred previous style)
                         st.write(" ") # Tiny spacer
                         if st.button("View", key=f"drill_view_{p.get('id', i)}", use_container_width=True):
-                            st.session_state.pending_detail_id = p.get('id')
+                            st.session_state.selected_project_id = p.get('id')
                             st.rerun()
             else:
                 st.info("No projects match the filter.")
 
         with tab_time:
             # VERSION MARKER (Vertical Redesign)
-            st.caption("Time Machine Engine v5.1 (Vertical Mode)")
+            # VERSION MARKER (Vertical Redesign) - Removed caption
             
-            if filtered:
-                # Sort projects by start date for timeline
-                sorted_projs = sorted(filtered, key=lambda x: x['start_date'])
+            # TIME MACHINE: Always show all projects from the current year for a complete timeline
+            tm_projects = [p for p in projects if p['start_date'].year == today.year]
+            if tm_projects:
+                # REDESIGNED TIME MACHINE: Unique Dates & Stacked Projects
+                sorted_projs = sorted(tm_projects, key=lambda x: x['start_date'])
                 
-                # Calculate relative positions based on vertical height
-                start_all = min(p['start_date'] for p in sorted_projs)
-                end_all = max(p['end_date'] for p in sorted_projs)
-                total_days = (end_all - start_all).days or 1
+                # Group by date
+                from collections import defaultdict
+                date_groups = defaultdict(list)
+                for p in sorted_projs:
+                    d_str = p['start_date'].strftime("%Y-%m-%d")
+                    date_groups[d_str].append(p)
+                
+                sorted_dates = sorted(date_groups.keys())
                 
                 nodes_list = []
-                for i, p in enumerate(sorted_projs):
-                    days_from_start = (p['start_date'] - start_all).days
-                    top_offset = days_from_start * 25 # Increased spacing
+                current_top = 20
+                
+                for d_str in sorted_dates:
+                    projs_on_day = date_groups[d_str]
+                    dt = datetime.fromisoformat(d_str).date()
                     
-                    comp = sum(1 for t in p['tasks'] if t['completed']) / len(p['tasks']) if p['tasks'] else 0
-                    p_status_cls = "active"
-                    e_date = p['end_date'].date() if isinstance(p['end_date'], datetime) else p['end_date']
-                    if comp >= 1.0: p_status_cls = "completed"
-                    elif today > e_date: p_status_cls = "late"
+                    # Date Node
+                    node_html = f'<div class="tm-v51-node" style="top: {current_top}px;"></div>'
+                    date_html = f'<div class="tm-v51-date-left" style="top: {current_top - 10}px;">{dt.strftime("%b %d")}</div>'
+                    nodes_list.append(node_html + date_html)
                     
-                    # Horizontal zig-zag offset
-                    h_offset = (i % 2) * 20
+                    # Projects on this day (Stacked)
+                    for j, p in enumerate(projs_on_day):
+                        comp = sum(1 for t in p['tasks'] if t['completed']) / len(p['tasks']) if p['tasks'] else 0
+                        st_cls = "active"
+                        e_date = p['end_date'].date() if isinstance(p['end_date'], datetime) else p['end_date']
+                        if comp >= 1.0: st_cls = "completed"
+                        elif today > e_date: st_cls = "late"
+                        
+                        # Stack offset
+                        stack_h = j * 45 # Increased for full text
+                        stack_l = j * 15 # Stacked effect
+                        
+                        p_html = f'''
+                        <div class="tm-v51-goal-right {st_cls}" style="top: {current_top - 10 + stack_h}px; left: {110 + stack_l}px; z-index: {100-j};">
+                            <span class="tm-v51-goal">{p["goal"]}</span>
+                        </div>
+                        '''
+                        nodes_list.append(p_html)
                     
-                    # SINGLE LINE HTML to prevent markdown rendering bugs
-                    node_html = f'<div class="tm-v51-node {p_status_cls}" style="top: {top_offset}px;"></div>'
-                    content_html = f'<div class="tm-v51-content" style="top: {top_offset - 10}px; left: {40 + h_offset}px;"><span class="tm-v51-date">{p["start_date"].strftime("%b %d")}</span><span class="tm-v51-goal">{p["goal"][:25]}...</span></div>'
-                    nodes_list.append(node_html + content_html)
-
+                    # Increment current_top for next date group
+                    current_top += max(len(projs_on_day) * 50, 70)
+                
                 nodes_combined = "".join(nodes_list)
-                container_height = max(total_days * 25 + 100, 400)
+                container_height = max(current_top + 100, 500)
 
-                st.markdown(textwrap.dedent(f"""
+                # Robust HTML Construction
+                tm_html = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
                 <style>
+                body {{
+                    margin: 0; padding: 0;
+                    background-color: transparent;
+                    font-family: 'VT323', monospace;
+                }}
                 .tm-v51-wrapper {{
                     background: #F8FAFC;
                     border: 4px solid #002FA7;
                     border-radius: 8px;
                     padding: 40px;
-                    image-rendering: pixelated;
-                    max-height: 700px;
-                    overflow-y: auto;
+                    min-height: {container_height}px; 
                     position: relative;
+                    box-sizing: border-box;
                 }}
                 .tm-v51-container {{
                     position: relative;
                     height: {container_height}px;
-                    padding-left: 50px;
+                    padding-left: 80px;
                 }}
                 .tm-v51-axis {{
                     position: absolute;
-                    left: 20px;
-                    top: 0;
-                    bottom: 0;
+                    left: 80px;
+                    top: 0; bottom: 0;
                     width: 8px;
                     background: #002FA7;
                     z-index: 1;
@@ -745,48 +806,58 @@ def render_review_dashboard(projects):
                 }}
                 .tm-v51-node {{
                     position: absolute;
-                    left: 16px;
-                    width: 16px;
-                    height: 16px;
+                    left: 76px;
+                    width: 16px; height: 16px;
                     background: #FFF;
                     border: 3px solid #002FA7;
                     transform: translateY(-50%);
                     z-index: 2;
                 }}
-                .tm-v51-node.completed {{ background: #10B981; }}
-                .tm-v51-node.late {{ background: #EF4444; }}
-                .tm-v51-node.active {{ background: #3B82F6; }}
-                
-                .tm-v51-content {{
+                .tm-v51-date-left {{
+                    position: absolute;
+                    right: calc(100% - 75px);
+                    font-size: 16px;
+                    color: #002FA7;
+                    font-weight: bold;
+                    text-align: right;
+                    width: 70px;
+                }}
+                .tm-v51-goal-right {{
                     position: absolute;
                     display: flex;
                     flex-direction: column;
-                    font-family: 'VT323', monospace;
                     background: white;
                     border: 2px solid #002FA7;
-                    padding: 6px 10px;
-                    box-shadow: 4px 4px 0px rgba(0, 47, 167, 0.2);
-                    min-width: 180px;
+                    padding: 8px 14px;
+                    box-shadow: 4px 4px 0px rgba(0, 47, 167, 0.1);
+                    min-width: 280px;
+                    max-width: 450px;
                 }}
-                .tm-v51-date {{
-                    font-size: 11px;
-                    color: #64748B;
-                    border-bottom: 1px solid #EEE;
-                    margin-bottom: 2px;
-                }}
+                .tm-v51-goal-right.completed {{ border-left: 8px solid #10B981; }}
+                .tm-v51-goal-right.late {{ border-left: 8px solid #EF4444; }}
+                .tm-v51-goal-right.active {{ border-left: 8px solid #3B82F6; }}
+                
                 .tm-v51-goal {{
-                    font-size: 14px;
+                    font-size: 18px;
                     color: #002FA7;
                     font-weight: bold;
+                    white-space: normal;
+                    line-height: 1.2;
                 }}
                 </style>
-                <div class="tm-v51-wrapper">
-                    <div class="tm-v51-container">
-                        <div class="tm-v51-axis"></div>
-                        {nodes_combined}
+                </head>
+                <body>
+                    <div class="tm-v51-wrapper">
+                        <div class="tm-v51-container">
+                            <div class="tm-v51-axis"></div>
+                            {nodes_combined}
+                        </div>
                     </div>
-                </div>
-                """), unsafe_allow_html=True)
+                </body>
+                </html>
+                """
+                import streamlit.components.v1 as components
+                components.html(tm_html, height=550, scrolling=True)
             else:
                 st.info("No projects to map in Time Machine.")
 
@@ -831,7 +902,7 @@ def render_review_dashboard(projects):
                     <div style="width: {p_late}%; background: #EF4444; border-right: 1px solid #002FA7;" title="Late: {late}"></div>
                     <div style="width: {p_active}%; background: #A855F7;" title="Active: {active}"></div>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 10px; font-family: 'VT323', monospace; font-size: 14px; color: #002FA7;">
+                <div style="display: flex; justify-content: space-between; margin-top: 10px; color: #1E3A8A; font-weight: 700; font-size: 1em;">
                     <div style="display: flex; align-items: center; gap: 4px;"><div style="width:10px; height:10px; background:#10B981;"></div> Early ({early})</div>
                     <div style="display: flex; align-items: center; gap: 4px;"><div style="width:10px; height:10px; background:#3B82F6;"></div> On Time ({on_time})</div>
                     <div style="display: flex; align-items: center; gap: 4px;"><div style="width:10px; height:10px; background:#EF4444;"></div> Late ({late})</div>
@@ -840,9 +911,8 @@ def render_review_dashboard(projects):
             </div>
             """, unsafe_allow_html=True)
             
-            # --- Report Section (Always Expanded) ---
+            # --- Report Section (Unified by selection) ---
             st.markdown('<div class="review-card-header">📥 Export & Report</div>', unsafe_allow_html=True)
-            report_tabs = st.tabs(["Weekly", "Monthly", "Yearly"])
             
             # Common Report Data Preparation
             report_data = []
@@ -876,40 +946,18 @@ def render_review_dashboard(projects):
                 })
             
             df_report = pd.DataFrame(report_data)
-            csv = df_report.to_csv(index=False).encode('utf-8')
+            df_report = pd.DataFrame(report_data)
+            # UTF-8 with BOM for Excel compatibility
+            csv = df_report.to_csv(index=False).encode('utf-8-sig')
 
-            with report_tabs[0]: # Weekly
-                # Generate Text Report (Weekly)
-                week_start = today - timedelta(days=today.weekday())
-                week_end = week_start + timedelta(days=6)
-                st.markdown(f"""
-                <div style="background: white; border: 2px solid #002FA7; padding: 24px; border-radius: 8px; box-shadow: 6px 6px 0px rgba(0, 47, 167, 0.1); margin: 10px 0;">
-                    <div style="font-size: 1.4rem; font-weight: 800; color: #002FA7; margin-bottom: 8px; font-family: 'VT323', monospace;">📊 WEEKLY REPORT SUMMARY</div>
-                    <div style="font-size: 1.25rem; color: #475569; font-weight: 600; font-family: 'VT323', monospace; margin-bottom: 12px;">📅 {week_start.strftime('%b %d')} - {week_end.strftime('%b %d')}</div>
-                    <div style="font-size: 2.8rem; color: #10B981; font-weight: 900; line-height: 1; font-family: 'VT323', monospace;">✅ {completed_count}/{len(filtered)} DONE</div>
-                </div>
-                """, unsafe_allow_html=True)
-                st.download_button("Download Weekly CSV", csv, f"weekly_report.csv", "text/csv", key="dl_weekly", use_container_width=True)
-
-            with report_tabs[1]: # Monthly
-                st.markdown(f"""
-                <div style="background: white; border: 2px solid #002FA7; padding: 24px; border-radius: 8px; box-shadow: 6px 6px 0px rgba(0, 47, 167, 0.1); margin: 10px 0;">
-                    <div style="font-size: 1.4rem; font-weight: 800; color: #002FA7; margin-bottom: 8px; font-family: 'VT323', monospace;">📊 MONTHLY PERFORMANCE</div>
-                    <div style="font-size: 1.25rem; color: #475569; font-weight: 600; font-family: 'VT323', monospace; margin-bottom: 12px;">📅 {today.strftime('%B %Y')}</div>
-                    <div style="font-size: 2.8rem; color: #10B981; font-weight: 900; line-height: 1; font-family: 'VT323', monospace;">✅ {completed_count}/{len(filtered)} DONE</div>
-                </div>
-                """, unsafe_allow_html=True)
-                st.download_button("Download Monthly CSV", csv, f"monthly_report.csv", "text/csv", key="dl_monthly", use_container_width=True)
-
-            with report_tabs[2]: # Yearly
-                st.markdown(f"""
-                <div style="background: white; border: 2px solid #002FA7; padding: 24px; border-radius: 8px; box-shadow: 6px 6px 0px rgba(0, 47, 167, 0.1); margin: 10px 0;">
-                    <div style="font-size: 1.4rem; font-weight: 800; color: #002FA7; margin-bottom: 8px; font-family: 'VT323', monospace;">📊 YEAR-TO-DATE STATUS</div>
-                    <div style="font-size: 1.25rem; color: #475569; font-weight: 600; font-family: 'VT323', monospace; margin-bottom: 12px;">📅 Year {today.year}</div>
-                    <div style="font-size: 2.8rem; color: #10B981; font-weight: 900; line-height: 1; font-family: 'VT323', monospace;">✅ {completed_count}/{len(filtered)} DONE</div>
-                </div>
-                """, unsafe_allow_html=True)
-                st.download_button("Download Yearly CSV", csv, f"yearly_report.csv", "text/csv", key="dl_yearly", use_container_width=True)
-
+            st.markdown(f"""
+            <div style="background: white; border: 2px solid #002FA7; padding: 24px; border-radius: 8px; box-shadow: 6px 6px 0px rgba(0, 47, 167, 0.1); margin: 10px 0;">
+                <div style="font-size: 1.4rem; font-weight: 800; color: #002FA7; margin-bottom: 8px; font-family: 'VT323', monospace;">📊 EXPORT REPORT SUMMARY</div>
+                <div style="font-size: 1.25rem; color: #475569; font-weight: 600; font-family: 'VT323', monospace; margin-bottom: 12px;">📅 SELECTED PERIOD: {period.upper()}</div>
+                <div style="font-size: 2.8rem; color: #10B981; font-weight: 900; line-height: 1; font-family: 'VT323', monospace;">✅ {completed_count}/{len(filtered)} DONE</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.download_button("Download Data (CSV for Excel)", csv, f"report_{period.lower().replace(' ','_')}.csv", "text/csv", key="dl_report", use_container_width=True)
         else:
             st.info("No data.")

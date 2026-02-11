@@ -48,3 +48,15 @@ Thumbs.db
 
 # Debug files
 debug_*.py
+agent_test.txt
+app_history.txt
+repair_app.py
+review_dashboard_snippet.py
+ai_suggestions.py
+start_app.command
+启动应用.command
+
+# Local data files
+pacer_focus.json
+pacer_journal.json
+pacer_tags.json
